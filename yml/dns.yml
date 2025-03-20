@@ -1,0 +1,118 @@
+- name: Install and configure BIND9 DNS server on Ubuntu 22.04
+  hosts: web
+  become: yes
+  tasks:
+    # 1. Install BIND9 and related utilities
+    - name: Install BIND9 DNS server
+      apt:
+        name:
+          - bind9
+          - bind9utils
+          - bind9-doc
+        state: present
+        update_cache: yes
+
+    # 2. Configure named.conf.options
+    - name: Configure named.conf.options
+      copy:
+        dest: /etc/bind/named.conf.options
+        content: |
+          options {
+              directory "/var/cache/bind";
+
+              // Allow queries from any IP
+              allow-query { any; };
+
+              // Allow recursion only from local network and localhost
+              allow-recursion { 127.0.0.1; localnets; };
+
+              // Forward queries to external DNS servers (e.g., Google DNS)
+              forwarders {
+                  8.8.8.8;
+                  8.8.4.4;
+              };
+
+              // Enable DNSSEC
+              dnssec-validation auto;
+
+              // Log settings
+              logging {
+                  channel default_file {
+                      file "/var/log/named.log" versions 3 size 5m;
+                      severity info;
+                      print-time yes;
+                      print-severity yes;
+                      print-category yes;
+                  };
+                  category default { default_file; };
+              };
+          };
+        owner: root
+        group: bind
+        mode: '0644'
+
+    # 3. Configure named.conf.local
+    - name: Configure named.conf.local
+      copy:
+        dest: /etc/bind/named.conf.local
+        content: |
+          zone "example.com" {
+              type master;
+              file "/etc/bind/db.example.com";  # Zone file path
+          };
+
+          zone "0.0.127.in-addr.arpa" {
+              type master;
+              file "/etc/bind/db.127";  # Reverse zone file path
+          };
+        owner: root
+        group: bind
+        mode: '0644'
+
+    # 4. Create a sample zone file (db.example.com)
+    - name: Create zone file for example.com
+      copy:
+        dest: /etc/bind/db.example.com
+        content: |
+          $TTL 86400
+          @    IN    SOA   ns1.example.com. admin.example.com. (
+                        2023031701 ; Serial
+                        3600       ; Refresh
+                        1800       ; Retry
+                        1209600    ; Expire
+                        86400 )    ; Minimum TTL
+
+               IN    NS    ns1.example.com.
+               IN    A     192.168.20.1
+
+          ns1   IN    A     192.168.20.1
+          www   IN    A     192.168.30.1
+        owner: root
+        group: bind
+        mode: '0644'
+
+    # 5. Create reverse zone file (db.127)
+    - name: Create reverse zone file for 127.0.0.1
+      copy:
+        dest: /etc/bind/db.127
+        content: |
+          $TTL 86400
+          @    IN    SOA   ns1.example.com. admin.example.com. (
+                        2023031701 ; Serial
+                        3600       ; Refresh
+                        1800       ; Retry
+                        1209600    ; Expire
+                        86400 )    ; Minimum TTL
+
+               IN    NS    ns1.example.com.
+          30   IN    PTR   www.example.com.
+        owner: root
+        group: bind
+        mode: '0644'
+
+    # 6. Ensure BIND9 is running and enabled on boot
+    - name: Ensure BIND9 is running and enabled
+      service:
+        name: bind9
+        state: restarted
+        enabled: yes
