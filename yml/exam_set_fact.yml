@@ -1,0 +1,9 @@
+- hosts: all
+  tasks:
+  - name: Set a variable
+    set_fact:
+      my_var: "Hello, Ansible!"
+  - name: Print the value of my_var
+    debug:
+      msg: "The value of my_var is {{ my_var }}"
+

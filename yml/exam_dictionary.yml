@@ -1,0 +1,14 @@
+- name: Set complex fact
+  hosts: localhost
+  tasks:
+  - name: Set a complex dictionary fact
+    set_fact:
+      my_data:
+        user: "ansible"
+        group: "admins"
+        permissions:
+          read: true
+          write: false
+  - name: Show complex data
+    debug:
+      msg: "{{ my_data }}"

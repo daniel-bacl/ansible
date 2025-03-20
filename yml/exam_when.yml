@@ -1,0 +1,10 @@
+- hosts: all
+  tasks:
+  - name: Set a variable
+    set_fact:
+      my_var: "expected_value"
+  - name: Conditionally display a message
+    debug:
+      msg: "The variable has the expected value!"
+    when: my_var == "expected_value"
+

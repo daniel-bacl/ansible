@@ -1,0 +1,13 @@
+- name: Set fact based on OS
+  hosts: localhost
+  tasks:
+  - name: Check the OS type
+    command: uname
+    register: os_type
+  - name: Set fact based on OS type
+    set_fact:
+      package_name: "{{ 'nginx' if os_type.stdout == 'Linux' else 'apache2' }}"
+  - name: Display the package to install
+    debug:
+      msg: "The package to install is: {{ package_name }}"
+
